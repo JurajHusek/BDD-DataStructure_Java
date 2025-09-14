@@ -1,0 +1,12 @@
+package bdd;
+
+import java.util.ArrayList;
+
+public class BDD {
+	public int pocetPremennych;
+	public String koren;
+	public char korenIndex;
+	public int pocetUzlov;
+	public Uzol korenUzol;
+	ArrayList<Uzol> uzly = new ArrayList<Uzol>(); 
+}

@@ -1,0 +1,780 @@
+package bdd;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Scanner;
+
+public class Main {
+	static BDD tree = new BDD();
+	@SuppressWarnings("unchecked")
+	static Hashtable<String, String>[] hashtable = (Hashtable<String,String>[])new Hashtable<?,?>[10];
+	static int pocetNodov = 0;
+	static int pocetNodovBezRedukcie = 0;
+	static int KontrolaUrovne = 0;
+	static ArrayList<Uzol>PoleUzlov = new ArrayList<Uzol>();
+	static boolean createdLast = false;
+	static int counter = 0;
+	static ArrayList<BDD>PoleTestStromov = new ArrayList<BDD>();
+	static ArrayList<String>PolePoradi = new ArrayList<String>();
+	static BDD bestTree;
+	
+	public static void newUzol(String bfunckia, String poradie, int status, Uzol parent)
+	{
+		//Uzol Utemp = new Uzol(parent, bfunckia,status);
+		String pomocnaF = bfunckia;
+		String pomocnePoradie = poradie;
+		String novaFunkcia1 = "";
+		String novaFunkcia2 = "";
+		
+		
+		int cisloUrovne = poradie.length();
+
+		if(pomocnePoradie.length() == 1)
+		{
+			//System.out.println("Hotovo");
+			//KonecneUzly(parent);
+			//createdLast = true;
+			if(status == 0)
+			{
+				for(Uzol t : PoleUzlov)
+				{
+					if(t.Udef == "0")
+					{
+						parent.LeftChild = t;
+					}
+				}
+			}
+			if(status == 1)
+			{
+				for(Uzol t : PoleUzlov)
+				{
+					if(t.Udef == "1")
+					{
+						parent.RightChild = t;
+					}
+				}
+			}
+		}
+		else
+		{		
+			if(cisloUrovne != KontrolaUrovne)
+			{
+				KontrolaUrovne = cisloUrovne;
+			}
+		String[] mensieVyrazy = pomocnaF.split("\\+");
+		for(int i = 0; i < mensieVyrazy.length; i++)
+		{
+			// System.out.println(mensieVyrazy[i]);
+		}
+		char CheckChar = pomocnePoradie.charAt(0);
+		
+		
+		if(status == 0)
+		{
+
+			String temp = "";
+			char negacia = Character.toLowerCase(CheckChar);
+			String negC = String.valueOf(negacia);
+			int poc1 = 0;
+			for(String prvok : mensieVyrazy)
+			{
+				if(prvok.indexOf(CheckChar) == -1 && prvok != " " && prvok.indexOf(negC) == -1)
+				{
+					if(poc1 == 0)
+						novaFunkcia1 = prvok;
+					else
+						novaFunkcia1 = prvok + "+" + novaFunkcia1;
+					poc1++;
+				}
+				//toto tu bol problem plus s mazanim predcodcu, sme na dobre ceste
+
+				if(prvok.indexOf(negC) != -1 && prvok.length() != 1)
+				{
+					if(poc1 == 0)
+					novaFunkcia1 = prvok;
+					else novaFunkcia1 = prvok + "+" + novaFunkcia1;
+					poc1++;
+						
+				}
+				if(prvok.indexOf(negC) != -1 && prvok.length() == 1)
+				{
+					if(poc1 == 0)
+					novaFunkcia1 = "1";
+					else novaFunkcia1 = "1";
+					poc1++;
+						
+				}
+			}
+
+			if(novaFunkcia1.indexOf(CheckChar+1) == 2){
+				novaFunkcia1 = "1";
+			}
+			if(novaFunkcia1.indexOf(negC+1) == 2){
+				novaFunkcia1 = "0";
+			}
+			if(novaFunkcia1 == ""){
+				novaFunkcia1 = "0";
+			}
+			if(novaFunkcia1.indexOf("1") != -1)
+			{
+				novaFunkcia1 = "1";
+			}
+			String FinalF = novaFunkcia1.replace(negC, "");
+			String odstranZPoradie = String.valueOf(CheckChar);
+			String novePoradie = pomocnePoradie.replace(odstranZPoradie, "");
+			
+			if(FinalF == "")
+			{
+				FinalF = "0";
+				System.out.println("Nasiel som prazdne, je tam " + FinalF);
+			}
+			if(FinalF.length() == 3)
+			{
+				if(FinalF.charAt(0) == Character.toUpperCase(FinalF.charAt(2)) || Character.toUpperCase(FinalF.charAt(0)) == FinalF.charAt(2))
+				FinalF = "1";
+			}
+			if(FinalF.length() == 2)
+			{
+				if(FinalF.charAt(1) == '+')
+				FinalF = String.valueOf(FinalF.charAt(0));
+			}
+			//FinalF = FinalF.substring(0,FinalF.length()-1);
+			if(hashtable[0].get(FinalF) == null) {
+				if(FinalF != "0" && FinalF != "1")
+				{
+					pocetNodov++;
+					hashtable[0].put(FinalF,FinalF);
+					System.out.println(FinalF + " " + novePoradie);	
+					Uzol Utemp = new Uzol(parent, FinalF,0);
+					PoleUzlov.add(Utemp);
+					int tempP = PoleUzlov.indexOf(parent);
+					PoleUzlov.get(tempP).LeftChild = Utemp;
+					newUzol(FinalF,novePoradie,1,Utemp);
+					newUzol(FinalF,novePoradie,0,Utemp);
+				}
+				else if(FinalF == "0")
+				{
+					for(Uzol t : PoleUzlov)
+					{
+						if(t.Udef == "0")
+						{
+							parent.LeftChild = t;
+							if(parent.LeftChild != null && parent.RightChild != null && parent.LeftChild.Udef == parent.RightChild.Udef)
+							{
+								System.out.println("pripad");
+								if(parent.Parent.LeftChild == parent)
+								{
+									parent.Parent.LeftChild = t;
+									PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).LeftChild = t;
+									hashtable[0].remove(parent.Udef);
+									PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+									pocetNodov--;
+								}
+								else
+								{
+									parent.Parent.RightChild = t;
+									PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).RightChild = t;
+									hashtable[0].remove(parent.Udef);
+									PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+									pocetNodov--;
+								}
+							}
+						}
+					}
+				}
+				else if(FinalF == "1")
+				{
+					for(Uzol t : PoleUzlov)
+					{
+						if(t.Udef == "1")
+						{
+							parent.LeftChild = t;
+							if(parent.LeftChild != null && parent.RightChild != null && parent.LeftChild.Udef == parent.RightChild.Udef)
+							{
+								System.out.println("pripad");
+								if(parent.Parent.LeftChild == parent)
+								{
+									parent.Parent.LeftChild = t;
+									PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).LeftChild = t;
+									hashtable[0].remove(parent.Udef);
+									PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+									pocetNodov--;
+								}
+								else
+								{
+									parent.Parent.RightChild = t;
+									PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).RightChild = t;
+									hashtable[0].remove(parent.Udef);
+									PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+									
+									pocetNodov--;
+								}
+							}
+						}
+					}
+				}
+			}
+			else {
+				for(Uzol t : PoleUzlov)
+				{
+					if(hashtable[0].get(FinalF) == hashtable[0].get(t.Udef))
+					{
+						System.out.println("Nasiel som " + FinalF);
+						parent.LeftChild = t;
+						if(parent.LeftChild != null && parent.RightChild != null && parent.LeftChild.Udef == parent.RightChild.Udef)
+						{
+							System.out.println("pripad");
+							if(parent.Parent.LeftChild == parent)
+							{
+								parent.Parent.LeftChild = t;
+								PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).LeftChild = t;
+								hashtable[0].remove(parent.Udef);
+								PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+								
+								pocetNodov--;
+							}
+							else
+							{
+								parent.Parent.RightChild = t;
+								PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).RightChild = t;
+								hashtable[0].remove(parent.Udef);
+								PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+								pocetNodov--;
+							}
+						}
+					}	
+				}
+			}	
+			
+		}
+		if(status == 1)
+		{
+			
+			String negaC = String.valueOf(Character.toLowerCase(CheckChar));
+			String OdstranC = String.valueOf(CheckChar);
+			int poc = 0;
+			boolean jeZNeg = false;
+			for(String prvok : mensieVyrazy)
+			{
+				
+				if(prvok.indexOf(CheckChar) == -1 && prvok.indexOf(negaC)== -1 && prvok != " ")
+				{
+					//System.out.println("!!!!! " + prvok);
+					if(poc == 0){
+						novaFunkcia2 = prvok;
+						poc++;
+					}
+					else{
+
+						novaFunkcia2 = novaFunkcia2 + "+" + prvok; 
+						poc++;
+					}	
+				}
+				if(prvok.indexOf(CheckChar) != -1 && prvok.indexOf(negaC)== -1 && prvok != " ") {	
+					if(poc == 0){
+						novaFunkcia2 = prvok; //tu je problém
+						poc++;
+					}
+					else{
+						novaFunkcia2 =  novaFunkcia2 +"+" + prvok;
+						poc++;
+					}	
+				}
+				if(prvok.indexOf(CheckChar) == -1 && prvok.indexOf(negaC)!= -1 && prvok != " " && prvok.length() == 1) {
+					if(poc == 0){
+						novaFunkcia2 = "0"; //tu je problém
+						poc++;
+					}
+					else{
+						novaFunkcia2 =  novaFunkcia2;;
+						poc++;
+					}	
+				}
+				if(prvok.indexOf(CheckChar) != -1 && prvok.indexOf(negaC)== -1 && prvok != " " && prvok.length() == 1) {
+					if(poc == 0){
+						novaFunkcia2 = "1"; //tu je problém
+						poc++;
+					}
+					else{
+						novaFunkcia2 =  novaFunkcia2;;
+						poc++;
+					}	
+				}
+				
+			}
+			if(novaFunkcia2.indexOf(CheckChar+1) == 2){
+				novaFunkcia2 = "1";
+			}
+			if(novaFunkcia2.indexOf(negaC+1) == 2){
+				novaFunkcia2 = "0";
+			}	
+			if(novaFunkcia1.indexOf("1") != -1)
+			{
+				novaFunkcia1 = "1";
+			}
+			String odstranZPoradie = String.valueOf(CheckChar);
+			String novePoradie = pomocnePoradie.replace(odstranZPoradie, "");
+			String FinalF = novaFunkcia2.replace(negaC, "");
+			FinalF = novaFunkcia2.replace(OdstranC, "");
+			
+			if(FinalF == "")
+			{
+				FinalF = "0";
+				System.out.println("Nasiel som prazdne, je tam " + FinalF);
+			}
+
+			
+			if(FinalF.length() == 3)
+			{
+				if(FinalF.charAt(0) == Character.toUpperCase(FinalF.charAt(2)) || Character.toUpperCase(FinalF.charAt(0)) == FinalF.charAt(2))
+				FinalF = "1";
+			}
+			if(FinalF.length() == 2)
+			{
+				if(FinalF.charAt(1) == '+')
+				FinalF = String.valueOf(FinalF.charAt(0));
+			}
+			
+			
+			//FinalF = FinalF.substring(0,FinalF.length()-1);
+			if(hashtable[0].get(FinalF) == null) {
+				if(FinalF != "1" && FinalF != "0")
+				{
+					pocetNodov++;
+					hashtable[0].put(FinalF,FinalF);
+					System.out.println(FinalF + " " + novePoradie);
+					Uzol Utemp = new Uzol(parent, FinalF,1);
+					PoleUzlov.add(Utemp);
+					int tempP = PoleUzlov.indexOf(parent);
+					PoleUzlov.get(tempP).RightChild = Utemp;
+					newUzol(FinalF,novePoradie,1,Utemp);
+					newUzol(FinalF,novePoradie,0,Utemp);
+				}
+				else if(FinalF == "0")
+				{
+					for(Uzol t : PoleUzlov)
+					{
+						if(t.Udef == "0")
+						{
+							parent.RightChild = t;
+							if(parent.LeftChild != null && parent.RightChild != null && parent.LeftChild.Udef == parent.RightChild.Udef)
+							{
+								System.out.println("pripad");
+								if(parent.Parent.LeftChild == parent)
+								{
+									parent.Parent.LeftChild = t;
+									PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).LeftChild = t;
+									hashtable[0].remove(parent.Udef);
+									PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+									
+									pocetNodov--;
+								}
+								else
+								{
+									parent.Parent.RightChild = t;
+									PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).RightChild = t;
+									hashtable[0].remove(parent.Udef);
+									PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+									
+									pocetNodov--;
+								}
+							}
+						}
+					}
+				}
+				else 
+				{
+					for(Uzol t : PoleUzlov)
+					{
+						if(t.Udef == "1")
+						{
+							parent.RightChild = t;
+							if(parent.LeftChild != null && parent.RightChild != null && parent.LeftChild.Udef == parent.RightChild.Udef)
+							{
+								System.out.println("pripad");
+								if(parent.Parent.LeftChild == parent)
+								{
+									parent.Parent.LeftChild = t;
+									PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).LeftChild = t;
+									hashtable[0].remove(parent.Udef);
+									PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+									
+									pocetNodov--;
+								}
+								else
+								{
+									parent.Parent.RightChild = t;
+									PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).RightChild = t;
+									hashtable[0].remove(parent.Udef);
+									PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+									
+									pocetNodov--;
+								}
+							}
+						}
+					}
+				}
+			}
+			else {
+				for(Uzol t : PoleUzlov)
+				{
+					if(hashtable[0].get(FinalF) == hashtable[0].get(t.Udef))
+					{
+						System.out.println("Nasiel som " + FinalF);
+						parent.RightChild = t;
+						if(parent.LeftChild != null && parent.RightChild != null && parent.LeftChild.Udef == parent.RightChild.Udef)
+						{
+							System.out.println("pripad");
+							if(parent.Parent.LeftChild == parent)
+							{
+								parent.Parent.LeftChild = t;
+								PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).LeftChild = t;
+								hashtable[0].remove(parent.Udef);
+								PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+								pocetNodov--;
+							}
+							else
+							{
+								parent.Parent.RightChild = t;
+								PoleUzlov.get(PoleUzlov.indexOf(parent.Parent)).RightChild = t;
+								hashtable[0].remove(parent.Udef);
+								PoleUzlov.get(PoleUzlov.indexOf(parent)).Udef = "Zmazany";
+								
+								pocetNodov--;
+							}
+						}
+					}	
+				}
+			}
+		}
+		if(status == 2)
+		{	
+			pocetNodov++;
+			System.out.println(pomocnaF + " " + pomocnePoradie);
+			Uzol Utemp = new Uzol(parent, pomocnaF,2);
+			PoleUzlov.add(Utemp);
+			newUzol(pomocnaF,pomocnePoradie,1,Utemp);
+			newUzol(pomocnaF,pomocnePoradie,0,Utemp);
+		}
+		}
+	}
+		
+	public static void KonecneUzly(Uzol tempParent)
+	{
+
+		if(createdLast == false)
+		{
+			pocetNodov += 2;
+			Uzol nula = new Uzol(tempParent, "0", 0);
+			Uzol jedna = new Uzol(tempParent, "1", 1);
+			PoleUzlov.add(nula);
+			PoleUzlov.add(jedna);
+			System.out.println("0");
+			System.out.println("1");
+			
+		}
+		
+	}
+	
+	public static void RunEndy()
+	{
+
+		for(Uzol t : PoleUzlov)
+		{
+			
+			if(t.Udef.length() == 1)
+				{
+				if(t.Udef != "0" && t.Udef != "1" && t.LeftChild.Udef == "0" && t.RightChild.Udef == "1" )
+				
+				{
+					char[] prepis = t.Udef.toCharArray();
+					if(Character.isUpperCase(prepis[0]) != true && t.Udef != "0" && t.Udef != "1")
+					{
+						for(Uzol t2 : PoleUzlov)
+						{
+							if(t2.Udef == "1")
+							{
+								t.LeftChild = t2;
+							}
+						}
+						for(Uzol t3 : PoleUzlov)
+						{
+							if(t3.Udef == "0")
+							{
+								t.RightChild = t3;
+							}
+						}
+					}
+					
+				}
+			}
+		}
+	}
+	public static void SetHashtables(String poradie)
+	{
+		
+		//int dlzka = poradie.length();
+		//for(int i = 13; i > 0; i--)
+		//{
+			hashtable[0] = new Hashtable<String,String>();
+		//}
+	  
+	}
+	
+	public static void vypisRightt()
+	{
+		for(int i = 0; i < PoleUzlov.size(); i++)
+		{
+			String temp;
+			if(PoleUzlov.get(i).RightChild != null)
+			{
+				temp = " rc: " + PoleUzlov.get(i).RightChild.Udef;
+			}
+			else
+			{
+				temp = " rc: nema";
+			}
+			String temp2;
+			if(PoleUzlov.get(i).LeftChild != null)
+			{
+				temp2 = " lc: " + PoleUzlov.get(i).LeftChild.Udef;
+			}
+			else
+			{
+				temp2 = " lc: nema";
+			}
+			if(PoleUzlov.get(i).Udef != "Zmazany")
+				System.out.println(PoleUzlov.get(i).Udef + temp2 + temp);
+		}
+		
+		
+	}
+	
+	public static void getFact(String p, String an) {
+		if(p.length() < 5)
+		{
+		 if (p.length() == 0) {
+			 	PolePoradi.add(an);
+	            return;
+	        }
+	 
+	        for (int i = 0; i < p.length(); i++) {
+	            char ch = p.charAt(i);
+
+	            String rest = p.substring(0, i) +
+	                        p.substring(i + 1);
+	            getFact(rest, an+ch);
+	        }
+		}
+		else
+		{
+			for(int i = 0; i < (p.length()*p.length()); i++)
+			{
+				List<String> characters = Arrays.asList(p.split(""));
+				Collections.shuffle(characters);
+				String after = "";
+				for(String c : characters)
+				{
+					after += c;
+				}
+				PolePoradi.add(after);
+			}
+		}
+	}
+	public static void BDD_create(String bfunkcia, String poradie)
+	{
+		pocetNodov = 0;
+		SetHashtables(poradie);
+		
+		tree.Bfunkcia = bfunkcia;
+		tree.Poradie = poradie;
+		tree.pocetPremennych = poradie.length();
+		
+		Uzol Empty = new Uzol(null, bfunkcia, 2);
+		KonecneUzly(Empty);
+		newUzol(bfunkcia,poradie,2,Empty);
+		RunEndy();
+		System.out.println("Pocet Uzlov po redukcii: " + pocetNodov);
+		tree.pocetUzlovPoRedukcii = pocetNodov;
+		pocetNodovBezRedukcie = (int) (Math.pow(2,(poradie.length()+1)) - 1);
+		System.out.println("Pocet nodov bez redukcie: " + pocetNodovBezRedukcie);
+		tree.pocetUzlov = pocetNodovBezRedukcie;
+		System.out.println("\n\n\n");
+		vypisRightt();
+		tree.korenUzol = PoleUzlov.get(2);
+		tree.uzly = new ArrayList<>(PoleUzlov);
+		System.out.println("Pocet Uzlov po redukcii: " + pocetNodov);
+		System.out.println("Pocet nodov bez redukcie: " + pocetNodovBezRedukcie);
+		float reductionRate = 100 - (Float.valueOf(pocetNodov) / Float.valueOf(pocetNodovBezRedukcie))*100f;
+		System.out.printf("Reduction Rate in percents: " + reductionRate);
+		tree.reductionRate = reductionRate;
+		PoleTestStromov.add(tree);
+		tree = null;
+		tree = new BDD();
+		PoleUzlov.clear();
+	}
+	
+	public static void BDD_create_with_best_order(String bfunkcia, String origin_poradie)
+	{
+		getFact(origin_poradie,"");
+		int pocetPremennych = origin_poradie.length();
+		
+		for(int i = 0; i < PolePoradi.size(); i++)
+		{
+			BDD_create(bfunkcia,PolePoradi.get(i));
+			
+		}
+		bestTree = PoleTestStromov.get(0);
+		for(int i = 0; i < PoleTestStromov.size(); i++)
+		{System.out.println(PoleTestStromov.get(i).pocetUzlovPoRedukcii);
+			if(bestTree.pocetUzlovPoRedukcii > PoleTestStromov.get(i).pocetUzlovPoRedukcii)
+			{
+				
+				bestTree = PoleTestStromov.get(i);
+				
+			}
+		}
+		
+		System.out.println("\nNajlepsi order pre BDD s funkciou " + bestTree.Bfunkcia + " z poctu diagramov: " + PoleTestStromov.size() + " je " + bestTree.Poradie + ", pocet pred redukciou: " + bestTree.pocetUzlov + " pocet uzlov po redukcii: " + bestTree.pocetUzlovPoRedukcii + " reduction rate: " + bestTree.reductionRate);
+	}
+	
+	public static void BDD_use(String bfunkcia, String poradie, String premenne)
+	{
+		BDD_create(bfunkcia,poradie);
+		BDD strom = PoleTestStromov.get(0);
+		System.out.println("\n" + strom.uzly.get(2).Udef);
+		Uzol aktualny = strom.uzly.get(2);
+		boolean mam = false;
+		for(int i = 0; i < premenne.length(); i++)
+		{
+			System.out.println(premenne.charAt(i) + " " + aktualny.Udef);
+			if(premenne.charAt(i) == '1')
+			{
+				aktualny = strom.uzly.get(strom.uzly.indexOf(aktualny.RightChild));
+				if(aktualny.Udef == "1" || aktualny.Udef == "0")
+				{
+					System.out.println("Vysledok je: " + aktualny.Udef);
+					mam = true;
+					break;
+				}
+				
+			//	System.out.println(premenne.charAt(i) + " " + aktualny.Udef);
+			}
+			if(premenne.charAt(i) == '0')
+			{
+	
+				aktualny = strom.uzly.get(strom.uzly.indexOf(aktualny.LeftChild));
+				if(aktualny.Udef == "1" || aktualny.Udef == "0")
+				{
+					System.out.println("Vysledok je: " + aktualny.Udef);
+					mam = true;
+					break;
+				}
+			}
+		}
+		if(mam == false)
+		{
+			System.out.println("Vysledok je: -1");
+		}
+	}
+	
+	
+	//Test scenarios
+	static ArrayList<String>bdd_13_p = new ArrayList<>();
+	static ArrayList<String>bdd_8_p = new ArrayList<>();
+	static ArrayList<String>bdd_4_p = new ArrayList<>();
+	static ArrayList<String>bdd_3_p = new ArrayList<>();
+	
+	public static void ReadFiles() throws IOException
+	{
+		BufferedReader bf1 = new BufferedReader(new FileReader("bdd13.txt"));
+		String line = bf1.readLine();
+		while(line != null)
+		{
+			bdd_13_p.add(line);
+			line = bf1.readLine();
+		}
+		bf1.close();
+		
+		BufferedReader bf2 = new BufferedReader(new FileReader("bdd8.txt"));
+		String line2 = bf2.readLine();
+		while(line2 != null)
+		{
+			bdd_8_p.add(line2);
+			line2 = bf2.readLine();
+		}
+		bf2.close();
+		
+		BufferedReader bf3 = new BufferedReader(new FileReader("bdd4.txt"));
+		String line3 = bf3.readLine();
+		while(line3 != null)
+		{
+			bdd_4_p.add(line3);
+			line3 = bf3.readLine();
+		}
+		bf3.close();
+		
+		BufferedReader bf4 = new BufferedReader(new FileReader("bdd3.txt"));
+		String line4 = bf4.readLine();
+		while(line4 != null)
+		{
+			bdd_3_p.add(line4);
+			line4 = bf4.readLine();
+		}
+		bf4.close();
+	}
+	
+	public static void Ukaz_BDD_USE()
+	{
+		BDD_use("AB+AC+BC","ABC","001");
+		BDD_use("AB+AC+BC","ABC","010");
+		BDD_use("AB+AC+BC","ABC","100");
+		BDD_use("AB+AC+BC","ABC","011");
+		BDD_use("AB+AC+BC","ABC","111");
+		BDD_use("AB+AC+BC","ABC","101");
+		BDD_use("AB+AC+BC","ABC","110");
+	}
+	
+	
+	@SuppressWarnings("resource")
+	public static void SkusVlastnuF()
+	{
+		PoleTestStromov.clear();
+		String bfunkcia;
+		String poradie;
+		Scanner scanIn = new Scanner(System.in);
+		String scanLine = scanIn.nextLine();
+		bfunkcia = scanLine;
+		poradie = scanIn.nextLine();
+		BDD_create(bfunkcia,poradie);
+	}
+	
+	public static void Default_BDD_order_show()
+	{
+		String bfunkcia = "ABCDEFGHIJKLMN+AbcDEFgHIJklMn+ABCDEFGhijklm+ABCdefghijkl";
+		String poradie = "ABCDEFGHIJKLMN";
+		BDD_create_with_best_order(bfunkcia,poradie);
+	}
+	
+	public static void Test_100_13_BDD_Order()
+	{
+		
+	}
+	// main void
+	public static void main(String[] args)
+	{
+		String bfunkcia;
+		bfunkcia = "AB+AC+BC"; //Ac+ABC+aB+bC  AB+AC+BC  ABC+bC+Ac+Abc ABCDEFGHIJKLMN+AbcDEFgHIJklMn+ABCDEFGhijklm+ABCdefghijkl aBf+cd+Ef+AGH+IjK+Lmn+XYZ+T (ABCDEFGHIJKLMNXYZT)
+		String poradie = "ABC";
+		//BDD_create(bfunkcia,poradie);
+		//BDD_create_with_best_order(bfunkcia,poradie);
+		//BDD_use(bfunkcia,poradie,"001");
+	}
+}
+

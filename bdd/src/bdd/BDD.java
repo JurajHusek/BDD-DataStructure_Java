@@ -1,0 +1,14 @@
+package bdd;
+
+import java.util.ArrayList;
+
+public class BDD {
+	public int pocetPremennych;
+	public String Bfunkcia;
+	public String Poradie;
+	public int pocetUzlov;
+	public int pocetUzlovPoRedukcii;
+	public Uzol korenUzol;
+	public float reductionRate;
+	ArrayList<Uzol> uzly = new ArrayList<Uzol>(); 
+}
